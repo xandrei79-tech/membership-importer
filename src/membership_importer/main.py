@@ -1,6 +1,8 @@
-"""Application entry point."""
+"""Application entry point for Membership Importer."""
+
+from .gui import Application
 
 
 def main() -> None:
-    """Provide the application entry point."""
-    raise NotImplementedError("Membership Importer is not implemented yet")
+    """Create and start the application."""
+    Application().run()
