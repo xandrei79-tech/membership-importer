@@ -1,7 +1,8 @@
 """Presentation-layer entry points for the Membership Importer application."""
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import filedialog, ttk
+from pathlib import Path
 
 
 WINDOW_TITLE = "Membership Importer"
@@ -45,12 +46,14 @@ class Application:
             "Excel workbook",
             "workbook_path",
             row=0,
+            browse_command=self._browse_workbook,
         )
         self._create_file_section(
             content,
             "Bank statement(s)",
             "bank_statements_path",
             row=1,
+            browse_command=self._browse_bank_statements,
         )
 
         self.import_button = ttk.Button(
@@ -60,6 +63,7 @@ class Application:
             width=20,
         )
         self.import_button.grid(row=2, column=0, columnspan=3, pady=(30, 0))
+        self.bank_statement_paths: tuple[str, ...] = ()
 
         content.columnconfigure(1, weight=1)
 
@@ -69,6 +73,7 @@ class Application:
         label_text: str,
         variable_name: str,
         row: int,
+        browse_command: object | None = None,
     ) -> None:
         variable = tk.StringVar()
         setattr(self, variable_name, variable)
@@ -85,11 +90,35 @@ class Application:
             textvariable=variable,
             state="readonly",
         ).grid(row=row, column=1, padx=(0, 10), pady=5, sticky=tk.EW)
-        ttk.Button(parent, text="Browse").grid(
+        ttk.Button(parent, text="Browse", command=browse_command).grid(
             row=row,
             column=2,
             pady=5,
         )
+
+    def _browse_workbook(self) -> None:
+        selected_path = filedialog.askopenfilename(
+            parent=self.root,
+            title="Select Excel workbook",
+            filetypes=[
+                ("Excel workbooks", ("*.xlsx", "*.xlsm")),
+            ],
+        )
+        if selected_path:
+            self.workbook_path.set(selected_path)
+
+    def _browse_bank_statements(self) -> None:
+        selected_paths = filedialog.askopenfilenames(
+            parent=self.root,
+            title="Select bank statement(s)",
+            filetypes=[
+                ("Bank statements", ("*.pdf", "*.csv", "*.xlsx", "*.xls")),
+            ],
+        )
+        if selected_paths:
+            self.bank_statement_paths = tuple(selected_paths)
+            filenames = [Path(path).name for path in selected_paths]
+            self.bank_statements_path.set(", ".join(filenames))
 
     def _create_status_bar(self) -> None:
         self.status_bar = ttk.Frame(self.root)
