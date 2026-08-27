@@ -1,8 +1,10 @@
 """Presentation-layer entry points for the Membership Importer application."""
 
 import tkinter as tk
-from tkinter import filedialog, ttk
+from tkinter import filedialog, messagebox, ttk
 from pathlib import Path
+
+from openpyxl import load_workbook
 
 
 WINDOW_TITLE = "Membership Importer"
@@ -20,6 +22,10 @@ class Application:
         self._create_toolbar()
         self._create_workspace()
         self._create_status_bar()
+        self.workbook = None
+        self.worksheet_names: tuple[str, ...] = ()
+        self.active_worksheet_name: str | None = None
+        self.required_worksheets: dict[str, bool] = {}
 
     def _configure_window(self) -> None:
         self.root.title(WINDOW_TITLE)
@@ -59,6 +65,7 @@ class Application:
         self.import_button = ttk.Button(
             content,
             text="Import",
+            command=self._load_workbook,
             state=tk.DISABLED,
             width=20,
         )
@@ -106,6 +113,61 @@ class Application:
         )
         if selected_path:
             self.workbook_path.set(selected_path)
+            self.import_button.configure(state=tk.NORMAL)
+
+    def _load_workbook(self) -> None:
+        workbook_path = self.workbook_path.get()
+        if not workbook_path:
+            messagebox.showerror(
+                "Workbook Error",
+                "Please select an Excel workbook.",
+                parent=self.root,
+            )
+            return
+
+        try:
+            workbook = load_workbook(workbook_path)
+        except Exception as error:
+            messagebox.showerror(
+                "Workbook Error",
+                f"Failed to load workbook: {error}",
+                parent=self.root,
+            )
+            return
+
+        self.workbook = workbook
+        messagebox.showinfo(
+            "Workbook Loaded",
+            "Workbook loaded successfully.",
+            parent=self.root,
+        )
+        self._analyze_workbook()
+
+    def _analyze_workbook(self) -> None:
+        worksheet_names = tuple(self.workbook.sheetnames)
+        self.worksheet_names = worksheet_names
+        self.active_worksheet_name = self.workbook.active.title
+        self.required_worksheets = {
+            year: year in worksheet_names
+            for year in ("2025", "2026", "2027")
+        }
+
+        worksheet_lines = "\n".join(
+            f"- {worksheet_name}" for worksheet_name in worksheet_names
+        )
+        found_lines = "\n".join(
+            f"{year} {chr(0x2714) if found else chr(0x2718)}"
+            for year, found in self.required_worksheets.items()
+        )
+        analysis = (
+            "Worksheets:\n"
+            f"{worksheet_lines}\n\n"
+            "Active worksheet:\n"
+            f"{self.active_worksheet_name}\n\n"
+            "Found:\n"
+            f"{found_lines}"
+        )
+        messagebox.showinfo("Workbook analysis", analysis, parent=self.root)
 
     def _browse_bank_statements(self) -> None:
         selected_paths = filedialog.askopenfilenames(
