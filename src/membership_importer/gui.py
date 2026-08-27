@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from pathlib import Path
 
-from openpyxl import load_workbook
+from .excel_manager import ExcelManager, WorkbookAnalysisResult
 
 
 WINDOW_TITLE = "Membership Importer"
@@ -22,10 +22,8 @@ class Application:
         self._create_toolbar()
         self._create_workspace()
         self._create_status_bar()
-        self.workbook = None
-        self.worksheet_names: tuple[str, ...] = ()
-        self.active_worksheet_name: str | None = None
-        self.required_worksheets: dict[str, bool] = {}
+        self.excel_manager = ExcelManager()
+        self.workbook_analysis: WorkbookAnalysisResult | None = None
 
     def _configure_window(self) -> None:
         self.root.title(WINDOW_TITLE)
@@ -126,7 +124,7 @@ class Application:
             return
 
         try:
-            workbook = load_workbook(workbook_path)
+            analysis = self.excel_manager.load_workbook(Path(workbook_path))
         except Exception as error:
             messagebox.showerror(
                 "Workbook Error",
@@ -135,39 +133,36 @@ class Application:
             )
             return
 
-        self.workbook = workbook
+        self.workbook_analysis = analysis
         messagebox.showinfo(
             "Workbook Loaded",
             "Workbook loaded successfully.",
             parent=self.root,
         )
-        self._analyze_workbook()
+        self._show_workbook_analysis(analysis)
 
-    def _analyze_workbook(self) -> None:
-        worksheet_names = tuple(self.workbook.sheetnames)
-        self.worksheet_names = worksheet_names
-        self.active_worksheet_name = self.workbook.active.title
-        self.required_worksheets = {
-            year: year in worksheet_names
-            for year in ("2025", "2026", "2027")
-        }
-
+    def _show_workbook_analysis(self, analysis: WorkbookAnalysisResult) -> None:
         worksheet_lines = "\n".join(
-            f"- {worksheet_name}" for worksheet_name in worksheet_names
+            f"- {worksheet_name}" for worksheet_name in analysis.worksheet_names
         )
         found_lines = "\n".join(
             f"{year} {chr(0x2714) if found else chr(0x2718)}"
-            for year, found in self.required_worksheets.items()
+            for year, found in analysis.required_worksheets.items()
         )
-        analysis = (
+
+        analysis_message = (
             "Worksheets:\n"
             f"{worksheet_lines}\n\n"
             "Active worksheet:\n"
-            f"{self.active_worksheet_name}\n\n"
+            f"{analysis.active_worksheet_name}\n\n"
             "Found:\n"
             f"{found_lines}"
         )
-        messagebox.showinfo("Workbook analysis", analysis, parent=self.root)
+        messagebox.showinfo(
+            "Workbook analysis",
+            analysis_message,
+            parent=self.root,
+        )
 
     def _browse_bank_statements(self) -> None:
         selected_paths = filedialog.askopenfilenames(
