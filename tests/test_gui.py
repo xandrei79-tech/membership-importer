@@ -2,7 +2,11 @@ import tkinter as tk
 
 import pytest
 
-from membership_importer.gui import WINDOW_GEOMETRY, WINDOW_TITLE, Application
+from membership_importer.ui.main_window import (
+    WINDOW_GEOMETRY,
+    WINDOW_TITLE,
+    Application,
+)
 
 
 @pytest.fixture

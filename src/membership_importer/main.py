@@ -1,6 +1,6 @@
 """Application entry point for Membership Importer."""
 
-from .gui import Application
+from .ui.main_window import Application
 
 
 def main() -> None:

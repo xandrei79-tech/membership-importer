@@ -4,7 +4,8 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from pathlib import Path
 
-from .excel_manager import ExcelManager, WorkbookAnalysisResult
+from ..excel.manager import WorkbookAnalysisResult
+from ..services.import_service import ImportService
 
 
 WINDOW_TITLE = "Membership Importer"
@@ -22,12 +23,13 @@ class Application:
         self._create_toolbar()
         self._create_workspace()
         self._create_status_bar()
-        self.excel_manager = ExcelManager()
+        self.import_service = ImportService()
         self.workbook_analysis: WorkbookAnalysisResult | None = None
 
     def _configure_window(self) -> None:
         self.root.title(WINDOW_TITLE)
         self.root.geometry(WINDOW_GEOMETRY)
+        self.root.update_idletasks()
 
     def _create_menu_bar(self) -> None:
         menu_bar = tk.Menu(self.root)
@@ -115,31 +117,28 @@ class Application:
 
     def _load_workbook(self) -> None:
         workbook_path = self.workbook_path.get()
-        if not workbook_path:
-            messagebox.showerror(
-                "Workbook Error",
-                "Please select an Excel workbook.",
-                parent=self.root,
-            )
-            return
+        bank_statement_paths = self.bank_statement_paths
 
         try:
-            analysis = self.excel_manager.load_workbook(Path(workbook_path))
+            import_result = self.import_service.import_payments(
+                workbook_path,
+                bank_statement_paths,
+            )
         except Exception as error:
             messagebox.showerror(
-                "Workbook Error",
-                f"Failed to load workbook: {error}",
+                "Import Error",
+                str(error),
                 parent=self.root,
             )
             return
 
-        self.workbook_analysis = analysis
+        self.workbook_analysis = import_result.workbook_analysis
         messagebox.showinfo(
             "Workbook Loaded",
             "Workbook loaded successfully.",
             parent=self.root,
         )
-        self._show_workbook_analysis(analysis)
+        self._show_workbook_analysis(self.workbook_analysis)
 
     def _show_workbook_analysis(self, analysis: WorkbookAnalysisResult) -> None:
         worksheet_lines = "\n".join(
