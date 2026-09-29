@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field
 from decimal import Decimal
 
+from .month_availability import MonthAvailability
 from .payment import Payment
 
 
@@ -15,6 +16,7 @@ class Member:
     active: bool = True
     notes: str = ""
     payments: list[Payment] = field(default_factory=list)
+    month_availability: MonthAvailability = field(default_factory=MonthAvailability)
 
     def add_payment(self, payment: Payment) -> None:
         """Add a payment to the member's payment history."""

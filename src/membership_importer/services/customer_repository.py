@@ -116,6 +116,10 @@ class CustomerRepository:
         """Return the customer matching ``customer_id``."""
         return self._customers.get(self._clean_text(customer_id))
 
+    def list_customers(self) -> list[Customer]:
+        """Return all customers in repository order."""
+        return list(self._customers.values())
+
     def get_member(self, mac: str) -> Member | None:
         """Return the member matching ``mac``."""
         return self._members_by_mac.get(self._clean_text(mac))

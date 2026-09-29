@@ -2,6 +2,7 @@ from datetime import date
 from decimal import Decimal
 
 from membership_importer.models.member import Member
+from membership_importer.models.month_availability import MonthAvailability
 from membership_importer.models.payment import Payment
 
 
@@ -23,6 +24,7 @@ def test_member_defaults_have_no_payments() -> None:
     assert member.active is True
     assert member.notes == ""
     assert member.payments == []
+    assert isinstance(member.month_availability, MonthAvailability)
     assert member.total_paid() == Decimal("0")
     assert member.has_payments() is False
 
